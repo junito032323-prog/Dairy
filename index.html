@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Life Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#000;--bg2:#1c1c1e;--bg3:#2c2c2e;--bg4:#3a3a3c;
+--text:#fff;--text2:#ebebf5cc;--text3:#ebebf599;
+--accent:#7B72E9;--accent2:#2d2a5a;
+--green:#30d158;--green2:#0d3320;
+--amber:#ffd60a;--amber2:#332b00;
+--blue:#0a84ff;--blue2:#001a3a;
+--red:#ff453a;--red2:#3a0a00;
+--pink:#ff375f;--pink2:#3a0010;
+--border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.16);
+--radius:14px;--radius-sm:10px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5}
+.app{display:flex;flex-direction:column;min-height:640px;max-width:430px;margin:0 auto;position:relative;overflow:hidden;background:var(--bg)}
+.header{padding:20px 20px 8px;display:flex;justify-content:space-between;align-items:flex-start}
+.header-title{font-size:30px;font-weight:700;letter-spacing:-0.5px}
+.header-date{font-size:13px;color:var(--text3);margin-top:2px}
+.header-streak{font-size:13px;font-weight:600;color:var(--amber);background:var(--amber2);padding:5px 12px;border-radius:20px;border:1px solid rgba(255,214,10,0.3)}
+.tabs-wrap{background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.tabs-wrap::-webkit-scrollbar{display:none}
+.tabs{display:flex;padding:0 8px;min-width:max-content}
+.tab{padding:10px 14px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;white-space:nowrap;border:none;background:transparent;border-bottom:2px solid transparent;transition:all 0.18s;margin-bottom:-1px}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:700}
+.content{flex:1;padding:12px 16px;overflow-y:auto}
+.section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px;margin:20px 0 8px 4px}
+.section-title:first-child{margin-top:4px}
+.card{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:10px;border:1px solid var(--border)}
+.btn-primary{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;border:none}
+.btn-primary:hover{opacity:0.85}
+.btn-secondary{display:inline-flex;align-items:center;justify-content:center;padding:9px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;background:var(--bg3);color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost{display:inline-flex;align-items:center;justify-content:center;padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--accent);border:1px solid var(--accent)}
+.btn-ghost:hover{background:var(--accent2)}
+.btn-danger{display:inline-flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;background:var(--red2);color:var(--red);border:1px solid rgba(255,69,58,0.3)}
+.save-btn{width:100%;padding:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;margin-top:12px}
+.add-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;border:1px solid var(--accent);border-radius:var(--radius-sm);color:var(--accent);background:var(--accent2);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:10px}
+.add-btn:hover{background:var(--accent);color:#fff}
+.seg-ctrl{display:flex;background:var(--bg3);border-radius:var(--radius-sm);padding:3px;margin-bottom:12px}
+.seg-btn{flex:1;padding:7px;border:none;background:transparent;border-radius:8px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;transition:all 0.15s}
+.seg-btn.active{background:var(--bg4);color:var(--text)}
+.habit-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+.habit-row:last-child{border-bottom:none}
+.habit-check{width:28px;height:28px;border-radius:50%;border:2px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);flex-shrink:0;background:var(--bg3)}
+.habit-check.done{background:var(--accent);border-color:var(--accent);transform:scale(1.1)}
+.habit-check.done svg{display:block}
+.habit-check svg{display:none;width:14px;height:14px}
+.habit-name{font-size:15px;font-weight:500}
+.habit-name.done{color:var(--accent)}
+.habit-freq{font-size:12px;color:var(--text3)}
+@keyframes rowFlash{0%{background:transparent}30%{background:var(--accent2)}100%{background:transparent}}
+.habit-row.completing{animation:rowFlash 0.5s ease}
+.progress-track{height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;background:var(--accent);border-radius:3px;transition:width 0.6s cubic-bezier(0.34,1.56,0.64,1)}
+.progress-label{font-size:12px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:5px}
+.all-done-banner{background:linear-gradient(135deg,#534AB7,#7B72E9);color:#fff;border-radius:var(--radius);padding:16px;text-align:center;margin-bottom:12px;animation:bannerIn 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes bannerIn{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+.todo-input-row{display:flex;gap:8px;margin-bottom:8px}
+.todo-input-row input{flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);font-size:14px;color:var(--text);outline:none}
+.todo-input-row input:focus{border-color:var(--accent)}
+.todo-item{border-bottom:1px solid var(--border)}
+.todo-item:last-child{border-bottom:none}
+.todo-item.dragging{opacity:0.3}
+.todo-item.drag-over{background:var(--accent2)}
+.todo-row{display:flex;align-items:center;gap:10px;padding:10px 4px;user-select:none}
+.todo-drag-handle{width:14px;display:flex;flex-direction:column;gap:3px;flex-shrink:0;opacity:0.3;padding:2px;cursor:grab}
+.todo-drag-handle span{display:block;height:1.5px;background:var(--text3);border-radius:1px}
+.todo-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);cursor:pointer;background:var(--bg3)}
+.todo-item.done .todo-check{background:var(--green);border-color:var(--green)}
+.todo-item.done .todo-text{text-decoration:line-through;color:var(--text3)}
+.todo-text{font-size:14px;flex:1;min-width:0}
+.todo-priority{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;flex-shrink:0;cursor:pointer}
+.priority-high{background:var(--red2);color:var(--red)}
+.priority-mid{background:var(--amber2);color:var(--amber)}
+.priority-low{background:var(--bg3);color:var(--text3)}
+.todo-timer-badge{font-size:11px;font-weight:600;padding:4px 9px;border-radius:10px;white-space:nowrap;cursor:pointer;flex-shrink:0}
+.timer-normal{background:var(--bg3);color:var(--text3)}
+.timer-warning{background:var(--amber2);color:var(--amber)}
+.timer-urgent{background:var(--red2);color:var(--red);animation:pulse 1s infinite}
+.timer-expired{background:var(--red);color:#fff}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+.todo-delete{width:20px;height:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;opacity:0;transition:opacity 0.2s;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.todo-row:hover .todo-delete{opacity:1}
+.timer-panel{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;margin:0 4px 8px;animation:slideDown 0.2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.timer-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.timer-preset{padding:8px 4px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg4);font-size:12px;font-weight:600;cursor:pointer;text-align:center;color:var(--text2)}
+.timer-preset.selected{background:var(--accent);color:#fff;border-color:var(--accent)}
+.timer-custom-row{display:flex;gap:6px;margin-bottom:10px}
+.timer-custom-row input{flex:1;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg4);font-size:13px;color:var(--text);outline:none;text-align:center}
+.timer-panel-btns{display:flex;gap:6px}
+.timer-panel-btns button{flex:1;padding:9px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none}
+.global-timer{background:var(--red);color:#fff;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;animation:pulse 1.5s infinite}
+.global-timer-time{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+textarea{width:100%;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);font-size:14px;color:var(--text);resize:none;outline:none;font-family:inherit;line-height:1.6}
+textarea:focus{border-color:var(--accent)}
+input[type=text],input[type=number],input[type=date],select{padding:10px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);font-size:14px;color:var(--text);outline:none;font-family:inherit}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--bg3)}
+.modal-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);display:flex;align-items:flex-end;z-index:200}
+.modal{background:var(--bg2);border-radius:var(--radius) var(--radius) 0 0;padding:20px;width:100%;max-height:85%;overflow-y:auto;border-top:1px solid var(--border2)}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:16px}
+.form-field{margin-bottom:12px}
+.form-label{font-size:11px;color:var(--text3);margin-bottom:5px;font-weight:600;display:block;text-transform:uppercase;letter-spacing:0.5px}
+.form-field input,.form-field select,.form-field textarea{width:100%}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+.modal-btns button{flex:1;padding:12px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;border:none}
+.log-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;background:var(--bg3)}
+.log-info{flex:1;min-width:0}
+.log-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log-meta{font-size:12px;color:var(--text3);margin-top:2px}
+.log-stars{font-size:12px;color:var(--amber);margin-top:2px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:8px}
+.cal-day-label{font-size:11px;color:var(--text3);text-align:center;padding:4px 0;font-weight:600}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;border:1px solid transparent;cursor:pointer;position:relative;color:var(--text3)}
+.cal-day:hover{background:var(--bg3)}
+.cal-day.today{border-color:var(--accent);font-weight:700;color:var(--accent)}
+.cal-day.full{background:var(--accent);color:#fff;border-color:transparent}
+.cal-day.partial{background:var(--accent2);color:var(--accent);border-color:transparent}
+.cal-day.empty{color:var(--bg4)}
+.cal-day.other-month{opacity:0.2}
+.cal-day.has-diary::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--amber)}
+.cal-day.full.has-diary::after{background:rgba(255,255,255,0.8)}
+.cal-month-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-month-title{font-size:16px;font-weight:700}
+.cal-nav-btn{width:32px;height:32px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;color:var(--text2);font-size:16px;display:flex;align-items:center;justify-content:center}
+.diary-popup{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px;margin-top:8px;animation:slideDown 0.2s ease}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat-card{background:var(--bg2);border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border)}
+.stat-label{font-size:12px;color:var(--text3);margin-bottom:4px;font-weight:500}
+.stat-value{font-size:26px;font-weight:700}
+.stat-sub{font-size:11px;color:var(--text3)}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.bar-label{font-size:12px;color:var(--text3);width:78px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:7px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 0.8s ease}
+.bar-pct{font-size:11px;color:var(--text3);width:32px;text-align:right;font-weight:600}
+.export-row{display:flex;gap:8px;margin-top:12px}
+.export-btn{flex:1;padding:10px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);font-size:13px;color:var(--text2);cursor:pointer;font-weight:500}
+.habit-edit-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.habit-edit-row:last-child{border-bottom:none}
+.habit-edit-freq{font-size:12px;color:var(--text3)}
+.habit-edit-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:12px;cursor:pointer;font-weight:500}
+.day-toggle{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.day-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border2);background:var(--bg3);font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;color:var(--text3)}
+.day-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chat-messages{min-height:200px;max-height:300px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.msg{padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;line-height:1.6;max-width:90%}
+.msg.user{background:var(--accent);color:#fff;align-self:flex-end;border-radius:var(--radius-sm) var(--radius-sm) 4px var(--radius-sm)}
+.msg.ai{background:var(--bg3);color:var(--text);align-self:flex-start;border-radius:var(--radius-sm) var(--radius-sm) var(--radius-sm) 4px;border:1px solid var(--border2)}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row input{flex:1;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);background:var(--bg3);font-size:14px;color:var(--text);outline:none}
+.chat-input-row input:focus{border-color:var(--accent)}
+.chat-input-row button{padding:10px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;cursor:pointer;font-weight:700}
+.particle{position:absolute;border-radius:50%;pointer-events:none;animation:particle-fall linear forwards}
+@keyframes particle-fall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(300px) rotate(720deg);opacity:0}}
+.goal-edit-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+.goal-edit-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.goal-edit-input{width:100%;padding:9px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);font-size:14px;color:var(--text);outline:none;margin-bottom:6px;display:block}
+.goal-edit-input:focus{border-color:var(--accent)}
+.goal-bullet-edit{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.goal-bullet-edit input{flex:1;padding:8px 12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:var(--bg3);font-size:14px;color:var(--text);outline:none}
+.goal-bullet-edit button{width:28px;height:28px;border-radius:50%;border:1px solid var(--red2);background:var(--red2);color:var(--red);cursor:pointer;font-size:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.monthly-goal-row{padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
+.monthly-goal-row:last-child{border-bottom:none}
+.monthly-check{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.25s;background:var(--bg3);margin-top:1px}
+.monthly-check.done{background:var(--green);border-color:var(--green)}
+.monthly-goal-text{font-size:14px}
+.having-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+.having-header{background:#0d0b1e;padding:10px 16px;border-bottom:1px solid var(--border)}
+.having-header-text{font-size:11px;font-weight:700;color:#7B72E9;text-transform:uppercase;letter-spacing:0.6px}
+.having-item{display:flex;gap:12px;padding:10px 16px;border-bottom:1px solid var(--border)}
+.having-item:last-child{border-bottom:none}
+.having-num{font-size:12px;font-weight:700;color:var(--accent);min-width:20px;margin-top:1px}
+.having-title{font-size:14px;font-weight:600}
+.having-desc{font-size:12px;color:var(--text3);margin-top:2px}
+</style>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyDgTsLUzyDFtwMgxb_mqiPp6-z8f74uE_Q",
+  authDomain: "my-diary-cf52e.firebaseapp.com",
+  projectId: "my-diary-cf52e",
+  storageBucket: "my-diary-cf52e.firebasestorage.app",
+  messagingSenderId: "865496195926",
+  appId: "1:865496195926:web:d9f97dec2e79252b5d6cf7"
+};
+firebase.initializeApp(firebaseConfig);
+window._db = firebase.firestore();
+window._auth = firebase.auth();
+window._firebaseReady = false;
+window._currentUser = null;
+
+window._auth.onAuthStateChanged(user => {
+  if (user) {
+    window._currentUser = user;
+    window._firebaseReady = true;
+    document.getElementById('authOverlay').style.display = 'none';
+    loadState().then(() => { updateHeader(); renderContent(); startTimerTick(); });
+  } else {
+    window._currentUser = null;
+    window._firebaseReady = false;
+    document.getElementById('authOverlay').style.display = 'flex';
+  }
+});
+
+async function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try { await window._auth.signInWithPopup(provider); }
+  catch(e) { alert('ログインに失敗しました: ' + e.message); }
+}
+async function signOut() {
+  await window._auth.signOut();
+}
+</script>
+</head>
+<body>
+<div id="authOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:20px">
+  <div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-0.5px">Life Tracker</div>
+  <div style="font-size:14px;color:#ebebf599;margin-bottom:8px">ログインしてデータを保存</div>
+  <button onclick="signInWithGoogle()" style="display:flex;align-items:center;gap:10px;padding:12px 24px;background:#fff;color:#1c1c1e;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer">
+    <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    Googleでログイン
+  </button>
+</div>
+<div class="app" id="app">
+  <div class="header">
+    <div>
+      <div class="header-title" id="headerTitle">今日</div>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="header-streak" id="headerStreak">🔥 0日</div>
+      <button onclick="signOut()" style="font-size:11px;color:#ebebf599;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;cursor:pointer">ログアウト</button>
+    </div>
+  </div>
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <button class="tab" onclick="switchTab('goal')">目標</button>
+      <button class="tab active" onclick="switchTab('today')">今日</button>
+      <button class="tab" onclick="switchTab('dashboard')">ダッシュボード</button>
+      <button class="tab" onclick="switchTab('calendar')">カレンダー</button>
+      <button class="tab" onclick="switchTab('diary')">日記</button>
+      <button class="tab" onclick="switchTab('log')">ログ</button>
+      <button class="tab" onclick="switchTab('habits')">習慣編集</button>
+      <button class="tab" onclick="switchTab('chat')">AIチャット</button>
+    </div>
+  </div>
+  <div class="content" id="content"></div>
+</div>
+<script>
+// Firebase storage implementation
+window.storage = {
+  get: async (key) => {
+    if (!window._firebaseReady || !window._currentUser) return null;
+    try {
+      const doc = await window._db.collection('users').doc(window._currentUser.uid).collection('data').doc(key).get();
+      if (doc.exists) return { value: doc.data().value };
+      return null;
+    } catch(e) { return null; }
+  },
+  set: async (key, value) => {
+    if (!window._firebaseReady || !window._currentUser) return null;
+    try {
+      await window._db.collection('users').doc(window._currentUser.uid).collection('data').doc(key).set({ value });
+      return { value };
+    } catch(e) { return null; }
+  }
+};
+
+const DEFAULT_HABITS=[
+  {id:'sleep',name:'睡眠7時間',freq:'毎日',type:'daily',color:'#7B72E9',days:[]},
+  {id:'phone',name:'スマホをボックスへ',freq:'毎日',type:'daily',color:'#7B72E9',days:[]},
+  {id:'bed',name:'ベッドメイク',freq:'毎日',type:'daily',color:'#ff375f',days:[]},
+  {id:'clean',name:'部屋の掃除',freq:'土',type:'custom',color:'#ff375f',days:[6]},
+  {id:'cardio',name:'有酸素運動10分',freq:'毎日',type:'daily',color:'#30d158',days:[]},
+  {id:'gym',name:'ジム',freq:'水・土・日',type:'custom',color:'#30d158',days:[3,6,0]},
+  {id:'ielts',name:'IELTS勉強',freq:'毎日',type:'daily',color:'#0a84ff',days:[]},
+  {id:'diary',name:'日記',freq:'毎日',type:'daily',color:'#ffd60a',days:[]},
+  {id:'movie',name:'映画を見る',freq:'土',type:'custom',color:'#8e8e93',days:[6]},
+];
+const MOVIE_GENRES=['アクション','ドラマ','コメディ','SF','ホラー','スリラー','ロマンス','ドキュメンタリー','アニメ','その他'];
+const BOOK_GENRES=['マーケティング','ビジネス','心理学・行動経済学','哲学','自己啓発','小説','歴史','科学','その他'];
+const CONFETTI=['#7B72E9','#30d158','#ffd60a','#0a84ff','#ff375f','#ff9f0a'];
+const PRIORITY_LABELS=['high','mid','low'];
+const PRIORITY_NAMES={high:'高',mid:'中',low:'低'};
+const TIMER_PRESETS=[5,15,25,30,45,60,90,120];
+const DAYS_JP=['日','月','火','水','木','金','土'];
+function generateMonthOptions(){const opts=[];const start=new Date(2026,3);for(let i=0;i<24;i++){const d=new Date(start.getFullYear(),start.getMonth()+i);const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;const label=`${d.getFullYear()}年${d.getMonth()+1}月`;opts.push({key,label});}return opts;}
+const MONTH_OPTIONS=generateMonthOptions();
+const DEFAULT_MONTHLY_GOALS={'2026-04':['毎日21時まで働く','土日どちらか出勤する','筋トレ達成率100%','有酸素運動達成率80%以上','マーケティング本を2冊読む'],'2026-09':['IELTS 7.0達成'],'2026-12':['部屋作り完成（ソファ・プロジェクター・棚）'],'2027-03':['月収100万達成','「マーケのことならこいつ」と言われる']};
+const DEFAULT_GOAL_CONFIG={being:'自分らしく生きて、本質で濃く承認される人',beingRoot:'自分らしくいることで得られる承認だけが、終わらない承認になる。それが自分を守ることにもなる。',beingBullets:['他人の枠に合わせて認められても消費されて終わる。本質で認められたい。','承認欲求は根源的欲求。ADHDのドーパミン回路と経験が組み合わさっている。','表面の承認も嬉しい。でも本質・思考・人間性で認められたい。','自分を理解しているから人を理解できる。それが武器になる。'],finalGoals:[{num:'01',title:'月収300万円',desc:'粗利で語れる実績が積み上がる'},{num:'02',title:'事業をマーケター視点で量産',desc:'どんな業界でも戦略を立て粗利で証明'},{num:'03',title:'一目でオーラを感じる存在',desc:'自信と実績と本質が一致している'},{num:'04',title:'日本1のマーケター',desc:'事業領域の幅広さと粗利の数字で証明'}],milestoneGoals:[{num:'01',title:'月収100万円を達成',desc:'数字で証明できるマーケターとして最初の実績'},{num:'02',title:'「マーケのことならこいつ」',desc:'思考の深さと誠実さで社内外から信頼'},{num:'03',title:'自信が外に滲み出ている',desc:'BeingとDoingとHavingが一致した状態'}]};
+
+let habits=JSON.parse(JSON.stringify(DEFAULT_HABITS));
+let goalConfig=JSON.parse(JSON.stringify(DEFAULT_GOAL_CONFIG));
+let state={habits:{},todos:{},diary:{},movies:[],books:[],monthlyGoals:JSON.parse(JSON.stringify(DEFAULT_MONTHLY_GOALS)),monthlyGoalsDone:{},chatHistory:[]};
+let currentTab='today',calMonth=new Date(),modalData=null,openTimerIdx=null,selectedTimerMins=25,dragSrcIdx=null,timerInterval=null,dashPeriod='weekly',habitPeriod='weekly',calSelectedDate=null,editingHabit=null,editingGoal=false,editingMonthKey=null;
+
+function todayKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function dateKey(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function isApplicable(h,d){const wd=d.getDay();if(h.type==='daily')return true;if(h.type==='custom')return(h.days||[]).includes(wd);return true;}
+function getFreqLabel(h){if(h.type==='daily')return'毎日';return(h.days||[]).slice().sort().map(d=>DAYS_JP[d]).join('・')||'未設定';}
+function getTodayApplicable(){return habits.filter(h=>isApplicable(h,new Date()));}
+function get100Streak(){let s=0;const today=new Date();for(let i=0;i<365;i++){const d=new Date(today);d.setDate(d.getDate()-i);const k=dateKey(d);const ap=habits.filter(h=>isApplicable(h,d));if(!ap.length)continue;const done=ap.filter(h=>(state.habits[k]||{})[h.id]).length;if(done===ap.length)s++;else if(i>0)break;}return s;}
+function getDayCompletion(d){const k=dateKey(d);const ap=habits.filter(h=>isApplicable(h,d));if(!ap.length)return 0;return ap.filter(h=>(state.habits[k]||{})[h.id]).length/ap.length;}
+function getSecondsLeft(t){if(!t.timerEnd)return null;return Math.floor((t.timerEnd-Date.now())/1000);}
+function formatTime(s){if(s<0)return'期限切れ';const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=s%60;if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
+function timerClass(s){if(s===null)return'timer-normal';if(s<0)return'timer-expired';if(s<60)return'timer-urgent';if(s<300)return'timer-warning';return'timer-normal';}
+
+async function loadState(){try{const r=await window.storage.get('lifetracker-v8');if(r&&r.value){const data=JSON.parse(r.value);state=data.state||state;habits=data.habits||habits;if(data.goalConfig)goalConfig=data.goalConfig;}}catch(e){}}
+async function saveState(){try{await window.storage.set('lifetracker-v8',JSON.stringify({state,habits,goalConfig}));}catch(e){}}
+
+function startTimerTick(){if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(()=>{if(currentTab==='today'){const k=todayKey();const todos=state.todos[k]||[];if(todos.some(t=>t.timerEnd&&!t.done))renderContent();}},1000);}
+
+function spawnParticles(x,y){const app=document.getElementById('app');for(let i=0;i<16;i++){const p=document.createElement('div');p.className='particle';const size=Math.random()*8+4;const angle=Math.random()*360;p.style.cssText=`width:${size}px;height:${size}px;background:${CONFETTI[Math.floor(Math.random()*CONFETTI.length)]};left:${x-size/2}px;top:${y-size/2}px;animation-duration:${Math.random()*0.6+0.5}s;`;app.appendChild(p);setTimeout(()=>p.remove(),900);}}
+function bigConfetti(){const app=document.getElementById('app');const w=app.offsetWidth;for(let i=0;i<60;i++){setTimeout(()=>{const p=document.createElement('div');p.className='particle';const size=Math.random()*10+5;p.style.cssText=`width:${size}px;height:${size}px;background:${CONFETTI[Math.floor(Math.random()*CONFETTI.length)]};left:${Math.random()*w}px;top:-10px;border-radius:${Math.random()>.5?'50%':'2px'};animation:particle-fall ${Math.random()*1.5+1}s linear forwards;`;app.appendChild(p);setTimeout(()=>p.remove(),2500);},i*30);}}
+
+function toggleHabit(habitId,event){const k=todayKey();if(!state.habits[k])state.habits[k]={};const wasOff=!state.habits[k][habitId];state.habits[k][habitId]=wasOff;if(wasOff&&event){const r=event.currentTarget.getBoundingClientRect();const ar=document.getElementById('app').getBoundingClientRect();spawnParticles(r.left-ar.left+r.width/2,r.top-ar.top+r.height/2);}const row=event&&event.currentTarget.closest('.habit-row');if(wasOff&&row){row.classList.add('completing');setTimeout(()=>row.classList.remove('completing'),500);}const ap=getTodayApplicable();const done=ap.filter(h=>(state.habits[k]||{})[h.id]).length;if(wasOff&&done===ap.length)setTimeout(bigConfetti,200);saveState();renderContent();updateHeader();}
+function addTodo(){const inp=document.getElementById('todoInput');if(!inp||!inp.value.trim())return;const k=todayKey();if(!state.todos[k])state.todos[k]=[];state.todos[k].unshift({text:inp.value.trim(),done:false,priority:'mid',timerEnd:null});inp.value='';saveState();renderContent();}
+function toggleTodo(idx,e){e.stopPropagation();const k=todayKey();if(!state.todos[k])return;state.todos[k][idx].done=!state.todos[k][idx].done;if(openTimerIdx===idx)openTimerIdx=null;saveState();renderContent();}
+function deleteTodo(idx,e){e.stopPropagation();const k=todayKey();if(!state.todos[k])return;state.todos[k].splice(idx,1);if(openTimerIdx===idx)openTimerIdx=null;else if(openTimerIdx>idx)openTimerIdx--;saveState();renderContent();}
+function cyclePriority(idx,e){e.stopPropagation();const k=todayKey();if(!state.todos[k])return;const cur=PRIORITY_LABELS.indexOf(state.todos[k][idx].priority||'mid');state.todos[k][idx].priority=PRIORITY_LABELS[(cur+1)%3];saveState();renderContent();}
+function toggleTimerPanel(idx,e){e.stopPropagation();openTimerIdx=openTimerIdx===idx?null:idx;if(openTimerIdx!==null)selectedTimerMins=25;renderContent();}
+function selectPreset(m){selectedTimerMins=m;renderContent();}
+function setTimer(){const k=todayKey();if(!state.todos[k])return;const customEl=document.getElementById('timerCustomInput');const mins=customEl&&customEl.value?parseInt(customEl.value):selectedTimerMins;if(!mins||isNaN(mins))return;state.todos[k][openTimerIdx].timerEnd=Date.now()+mins*60000;openTimerIdx=null;saveState();renderContent();startTimerTick();}
+function clearTimer(idx,e){e.stopPropagation();const k=todayKey();if(state.todos[k])state.todos[k][idx].timerEnd=null;saveState();renderContent();}
+function onDragStart(e,idx){dragSrcIdx=idx;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
+function onDragOver(e,idx){e.preventDefault();document.querySelectorAll('.todo-item').forEach((el,i)=>el.classList.toggle('drag-over',i===idx&&i!==dragSrcIdx));}
+function onDragEnd(e){e.currentTarget.classList.remove('dragging');document.querySelectorAll('.todo-item').forEach(el=>el.classList.remove('drag-over'));}
+function onDrop(e,idx){e.preventDefault();if(dragSrcIdx===null||dragSrcIdx===idx)return;const k=todayKey();if(!state.todos[k])return;const items=[...state.todos[k]];const[moved]=items.splice(dragSrcIdx,1);items.splice(idx,0,moved);state.todos[k]=items;dragSrcIdx=null;saveState();renderContent();}
+function saveDiary(){const k=todayKey();const entry=state.diary[k]||{};['hansei','yokatta1','yokatta2','yokatta3','kansha1','kansha2','kansha3','manabi','memo'].forEach(f=>{const el=document.getElementById(`diary-${f}`);if(el)entry[f]=el.value;});state.diary[k]=entry;if(entry.manabi&&entry.manabi.trim()){if(!state.habits[k])state.habits[k]={};state.habits[k]['diary']=true;}saveState();const btn=document.getElementById('diaryBtn');if(btn){btn.textContent='保存しました ✓';btn.style.background='var(--green)';setTimeout(()=>{if(btn){btn.textContent='保存する';btn.style.background='var(--accent)';}},2000);}}
+function toggleMonthlyGoal(mk,idx){if(!state.monthlyGoalsDone[mk])state.monthlyGoalsDone[mk]={};state.monthlyGoalsDone[mk][idx]=!state.monthlyGoalsDone[mk][idx];saveState();renderContent();}
+function addMonthGoal(){const sel=document.getElementById('monthSelect');if(!sel)return;const key=sel.value;if(!key||state.monthlyGoals[key])return;state.monthlyGoals[key]=[];saveState();editingMonthKey=key;renderContent();}
+function deleteMonth(mk){if(!confirm(`${mk}のゴールを削除しますか？`))return;delete state.monthlyGoals[mk];delete state.monthlyGoalsDone[mk];saveState();renderContent();}
+function openMonthEditor(mk){editingMonthKey=mk;renderContent();}
+function closeMonthEditor(){editingMonthKey=null;renderContent();}
+function saveMonthGoals(){if(!editingMonthKey)return;const inputs=document.querySelectorAll('.month-goal-input');state.monthlyGoals[editingMonthKey]=[...inputs].map(i=>i.value.trim()).filter(Boolean);editingMonthKey=null;saveState();renderContent();}
+function addMonthGoalInput(){const c=document.getElementById('monthGoalInputs');if(!c)return;const wrap=document.createElement('div');wrap.className='goal-bullet-edit';wrap.innerHTML=`<input class="month-goal-input" type="text" placeholder="新しいゴール"><button onclick="this.closest('.goal-bullet-edit').remove()">×</button>`;c.appendChild(wrap);wrap.querySelector('input').focus();}
+function startGoalEdit(){editingGoal=true;renderContent();}
+function cancelGoalEdit(){editingGoal=false;renderContent();}
+function saveGoalConfig(){const being=document.getElementById('edit-being');const beingRoot=document.getElementById('edit-beingRoot');if(being)goalConfig.being=being.value;if(beingRoot)goalConfig.beingRoot=beingRoot.value;const bullets=[...document.querySelectorAll('.edit-bullet')].map(i=>i.value.trim()).filter(Boolean);goalConfig.beingBullets=bullets;const fg=[...document.querySelectorAll('.edit-final-goal')].map((el,i)=>{const t=el.querySelector('.fg-title');const d=el.querySelector('.fg-desc');return{num:String(i+1).padStart(2,'0'),title:t?t.value:'',desc:d?d.value:''};}).filter(g=>g.title);goalConfig.finalGoals=fg;const mg=[...document.querySelectorAll('.edit-milestone-goal')].map((el,i)=>{const t=el.querySelector('.mg-title');const d=el.querySelector('.mg-desc');return{num:String(i+1).padStart(2,'0'),title:t?t.value:'',desc:d?d.value:''};}).filter(g=>g.title);goalConfig.milestoneGoals=mg;editingGoal=false;saveState();renderContent();}
+function addBullet(){const c=document.getElementById('bulletInputs');if(!c)return;const inp=document.createElement('input');inp.className='edit-bullet goal-edit-input';inp.type='text';inp.placeholder='Beingの根っこを追加';c.appendChild(inp);inp.focus();}
+function addFinalGoal(){const c=document.getElementById('finalGoalInputs');if(!c)return;const n=c.children.length+1;const div=document.createElement('div');div.className='edit-final-goal';div.style.cssText='background:var(--bg3);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;border:1px solid var(--border)';div.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">${String(n).padStart(2,'0')}</div><input class="fg-title goal-edit-input" type="text" placeholder="タイトル"><input class="fg-desc goal-edit-input" type="text" placeholder="説明" style="margin-top:4px">`;c.appendChild(div);}
+function addMilestoneGoal(){const c=document.getElementById('milestoneGoalInputs');if(!c)return;const n=c.children.length+1;const div=document.createElement('div');div.className='edit-milestone-goal';div.style.cssText='background:var(--bg3);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;border:1px solid var(--border)';div.innerHTML=`<div style="font-size:11px;color:var(--text3);margin-bottom:4px">${String(n).padStart(2,'0')}</div><input class="mg-title goal-edit-input" type="text" placeholder="タイトル"><input class="mg-desc goal-edit-input" type="text" placeholder="説明" style="margin-top:4px">`;c.appendChild(div);}
+function openHabitEditor(idx){const h=habits[idx];editingHabit={idx,name:h.name,type:h.type,days:[...(h.days||[])],color:h.color};renderContent();}
+function closeHabitEditor(){editingHabit=null;renderContent();}
+function toggleDay(d){if(!editingHabit)return;const i=editingHabit.days.indexOf(d);if(i>=0)editingHabit.days.splice(i,1);else editingHabit.days.push(d);renderContent();}
+function saveHabit(){if(!editingHabit)return;const nameEl=document.getElementById('habitEditName');const name=nameEl?nameEl.value.trim():editingHabit.name;if(!name)return;const h=habits[editingHabit.idx];h.name=name;h.days=editingHabit.days;if(editingHabit.type==='daily'){h.type='daily';h.freq='毎日';}else{h.type='custom';h.freq=editingHabit.days.slice().sort().map(d=>DAYS_JP[d]).join('・');}editingHabit=null;saveState();renderContent();}
+function addHabit(){const n=document.getElementById('newHabitName');const name=n&&n.value.trim();if(!name)return;habits.push({id:'h'+Date.now(),name,freq:'毎日',type:'daily',color:'#7B72E9',days:[]});if(n)n.value='';saveState();renderContent();}
+function deleteHabit(idx){habits.splice(idx,1);saveState();renderContent();}
+function openModal(type){modalData={type};renderContent();}
+function closeModal(){modalData=null;renderContent();}
+function saveLog(){if(!modalData)return;const t=modalData.type;const obj={date:document.getElementById('log-date').value||todayKey(),title:document.getElementById('log-title').value,genre:document.getElementById('log-genre').value,rating:document.getElementById('log-rating').value,review:document.getElementById('log-review').value,learning:document.getElementById('log-learning').value};if(t==='book')obj.author=document.getElementById('log-author').value;if(!obj.title)return;if(t==='movie')state.movies.unshift(obj);else state.books.unshift(obj);modalData=null;saveState();renderContent();}
+function exportCSV(){const rows=[['日付','習慣','達成']];Object.entries(state.habits).forEach(([d,h])=>{habits.forEach(hb=>rows.push([d,hb.name,h[hb.id]?'✓':'']));});const blob=new Blob(['\uFEFF'+rows.map(r=>r.join(',')).join('\n')],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`habits_${todayKey()}.csv`;a.click();}
+function exportJSON(){const blob=new Blob([JSON.stringify({state,habits,goalConfig},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`lifetracker_${todayKey()}.json`;a.click();}
+
+async function sendChat(){const inp=document.getElementById('chatInput');if(!inp||!inp.value.trim())return;const q=inp.value.trim();inp.value='';state.chatHistory.push({role:'user',content:q});renderContent();const sys=`あなたはパーソナルAIアシスタントです。\n日記: ${Object.entries(state.diary).slice(-7).map(([d,e])=>`${d}: 学び=${e.manabi||''}`).join('\n')}\n映画: ${state.movies.slice(0,5).map(m=>m.title).join(', ')||'なし'}\n本: ${state.books.slice(0,5).map(b=>b.title).join(', ')||'なし'}\n簡潔に日本語で答えてください。`;try{const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:sys,messages:state.chatHistory.map(m=>({role:m.role,content:m.content}))})});const data=await resp.json();const reply=data.content?.[0]?.text||'エラー';state.chatHistory.push({role:'assistant',content:reply});saveState();renderContent();setTimeout(()=>{const m=document.getElementById('chatMessages');if(m)m.scrollTop=m.scrollHeight;},50);}catch(e){state.chatHistory.push({role:'assistant',content:'エラーが発生しました。'});renderContent();}}
+
+function updateHeader(){const today=new Date();const days=['日','月','火','水','木','金','土'];document.getElementById('headerDate').textContent=`${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日（${days[today.getDay()]}）`;document.getElementById('headerStreak').textContent=`🔥 ${get100Streak()}日`;const titles={goal:'目標',today:'今日',dashboard:'ダッシュボード',calendar:'カレンダー',diary:'日記',log:'ログ',habits:'習慣編集',chat:'AIチャット'};document.getElementById('headerTitle').textContent=titles[currentTab]||'今日';}
+function switchTab(tab){currentTab=tab;editingHabit=null;editingGoal=false;editingMonthKey=null;modalData=null;document.querySelectorAll('.tab').forEach((t,i)=>{const tabs=['goal','today','dashboard','calendar','diary','log','habits','chat'];t.classList.toggle('active',tabs[i]===tab);});updateHeader();renderContent();}
+function renderContent(){const el=document.getElementById('content');if(!el)return;if(currentTab==='goal')el.innerHTML=renderGoal();else if(currentTab==='today')el.innerHTML=renderToday();else if(currentTab==='dashboard')el.innerHTML=renderDashboard();else if(currentTab==='calendar')el.innerHTML=renderCalendar();else if(currentTab==='diary')el.innerHTML=renderDiary();else if(currentTab==='log')el.innerHTML=renderLog();else if(currentTab==='habits')el.innerHTML=renderHabits();else if(currentTab==='chat')el.innerHTML=renderChat();if(currentTab==='dashboard')drawCharts();if(currentTab==='chat')setTimeout(()=>{const m=document.getElementById('chatMessages');if(m)m.scrollTop=m.scrollHeight;},50);}
+
+function renderTodoItem(t,idx){const secs=getSecondsLeft(t);const tc=timerClass(secs);const showPanel=openTimerIdx===idx&&!t.done;const panel=showPanel?`<div class="timer-panel"><div class="timer-presets">${TIMER_PRESETS.map(m=>`<div class="timer-preset${selectedTimerMins===m?' selected':''}" onclick="selectPreset(${m});event.stopPropagation()">${m}分</div>`).join('')}</div><div class="timer-custom-row"><input id="timerCustomInput" type="number" placeholder="カスタム（分）" min="1" max="480" onclick="event.stopPropagation()"></div><div class="timer-panel-btns"><button style="background:var(--bg4);color:var(--text2)" onclick="openTimerIdx=null;renderContent();event.stopPropagation()">キャンセル</button><button style="background:var(--accent);color:#fff" onclick="setTimer();event.stopPropagation()">セット</button></div></div>`:'';return`<div class="todo-item${t.done?' done':''}" draggable="true" ondragstart="onDragStart(event,${idx})" ondragover="onDragOver(event,${idx})" ondragend="onDragEnd(event)" ondrop="onDrop(event,${idx})"><div class="todo-row"><div class="todo-drag-handle"><span></span><span></span><span></span></div><div class="todo-check" onclick="toggleTodo(${idx},event)">${t.done?`<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`:''}</div><div class="todo-text">${t.text}</div><span class="todo-priority priority-${t.priority||'mid'}" onclick="cyclePriority(${idx},event)">${PRIORITY_NAMES[t.priority||'mid']}</span>${secs!==null?`<span class="todo-timer-badge ${tc}" onclick="clearTimer(${idx},event)">${formatTime(secs)}</span>`:`<span class="todo-timer-badge timer-normal" onclick="toggleTimerPanel(${idx},event)">⏱</span>`}<button class="todo-delete" onclick="deleteTodo(${idx},event)">×</button></div>${panel}</div>`;}
+
+function renderToday(){const today=new Date();const k=todayKey();const todayHabits=state.habits[k]||{};const applicable=getTodayApplicable();const doneCount=applicable.filter(h=>todayHabits[h.id]).length;const pct=applicable.length?Math.round(doneCount/applicable.length*100):0;const allDone=doneCount===applicable.length&&applicable.length>0;const todos=state.todos[k]||[];const pending=todos.filter(t=>!t.done);const done=todos.filter(t=>t.done);const urgentTodo=pending.filter(t=>t.timerEnd).sort((a,b)=>a.timerEnd-b.timerEnd)[0];const urgentSecs=urgentTodo?getSecondsLeft(urgentTodo):null;const allDoneBanner=allDone?`<div class="all-done-banner"><div style="font-size:32px;margin-bottom:4px">🎉</div><div style="font-size:16px;font-weight:700">全習慣達成！</div><div style="font-size:13px;opacity:0.8;margin-top:2px">今日も最高。この調子で続けよう</div></div>`:'';const globalTimer=(urgentSecs!==null&&urgentSecs<300)?`<div class="global-timer"><div><div style="font-size:11px;opacity:0.8">締め切りまで</div><div style="font-size:13px;font-weight:600;margin-top:2px">${urgentTodo.text}</div></div><div class="global-timer-time">${formatTime(urgentSecs)}</div></div>`:'';const habitsHTML=applicable.map(h=>{const checked=todayHabits[h.id];return`<div class="habit-row" onclick="toggleHabit('${h.id}',event)"><div class="habit-check${checked?' done':''}"><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="flex:1"><div class="habit-name${checked?' done':''}">${h.name}</div><div class="habit-freq">${getFreqLabel(h)}</div></div></div>`;}).join('');return`${allDoneBanner}${globalTimer}<div class="section-title">習慣 ${doneCount}/${applicable.length}</div><div class="card"><div class="progress-label"><span>今日の達成率</span><span style="font-weight:700;color:var(--accent)">${pct}%</span></div><div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div><div style="margin-top:14px">${habitsHTML}</div></div><div class="section-title">今日のTodo</div><div class="card"><div class="todo-input-row"><input id="todoInput" placeholder="タスクを追加..." onkeydown="if(event.key==='Enter')addTodo()"><button class="btn-primary" onclick="addTodo()">追加</button></div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">優先度タップで変更 · ⏱でタイマー · ドラッグで並び替え</div>${pending.map((t,i)=>renderTodoItem(t,i)).join('')}${done.length?`<div style="font-size:11px;color:var(--text3);margin:12px 0 6px;font-weight:500">完了 ${done.length}件</div>${done.map((t,i)=>renderTodoItem(t,i+pending.length)).join('')}`:''}</div>`;}
+
+function renderDashboard(){const streak=get100Streak();const today=new Date();const k=todayKey();const ap=getTodayApplicable();const done=ap.filter(h=>(state.habits[k]||{})[h.id]).length;const pct=ap.length?Math.round(done/ap.length*100):0;return`<div class="stats-grid"><div class="stat-card"><div class="stat-label">今日の達成率</div><div class="stat-value">${pct}%</div><div class="stat-sub">${done}/${ap.length} 習慣</div></div><div class="stat-card"><div class="stat-label">100%達成 連続</div><div class="stat-value">${streak}日</div><div class="stat-sub">🔥 全習慣達成ストリーク</div></div></div><div class="section-title">達成率グラフ</div><div class="seg-ctrl"><button class="seg-btn${dashPeriod==='daily'?' active':''}" onclick="dashPeriod='daily';renderContent()">日別</button><button class="seg-btn${dashPeriod==='weekly'?' active':''}" onclick="dashPeriod='weekly';renderContent()">週別</button><button class="seg-btn${dashPeriod==='monthly'?' active':''}" onclick="dashPeriod='monthly';renderContent()">月別</button></div><div class="card"><canvas id="mainChart" height="200"></canvas></div><div class="section-title">習慣別達成率</div><div class="seg-ctrl"><button class="seg-btn${habitPeriod==='weekly'?' active':''}" onclick="habitPeriod='weekly';renderContent()">今週</button><button class="seg-btn${habitPeriod==='monthly'?' active':''}" onclick="habitPeriod='monthly';renderContent()">今月</button></div><div class="card" id="habitBars"></div><div class="export-row"><button class="export-btn" onclick="exportCSV()">CSVエクスポート</button><button class="export-btn" onclick="exportJSON()">JSONエクスポート</button></div>
+    <button onclick="exportForAI()" style="width:100%;margin-top:8px;padding:13px;background:#2d2a5a;color:#b8b3f8;border:1px solid #7B72E9;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">🤖 AI用テキストをコピー</button>`;}
+
+function drawCharts(){const today=new Date();const chartEl=document.getElementById('mainChart');if(chartEl){let labels=[],data=[];if(dashPeriod==='daily'){for(let i=13;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const k=dateKey(d);const ap=habits.filter(h=>isApplicable(h,d));const dn=ap.filter(h=>(state.habits[k]||{})[h.id]).length;labels.push(`${d.getMonth()+1}/${d.getDate()}`);data.push(ap.length?Math.round(dn/ap.length*100):0);}}else if(dashPeriod==='weekly'){for(let w=6;w>=0;w--){const ws=new Date(today);ws.setDate(today.getDate()-today.getDay()-w*7);let t=0,d=0;for(let di=0;di<7;di++){const day=new Date(ws);day.setDate(ws.getDate()+di);const dk=dateKey(day);habits.filter(h=>isApplicable(h,day)).forEach(h=>{t++;if((state.habits[dk]||{})[h.id])d++;});}labels.push(`${ws.getMonth()+1}/${ws.getDate()}週`);data.push(t?Math.round(d/t*100):0);}}else{for(let m=5;m>=0;m--){const md=new Date(today.getFullYear(),today.getMonth()-m,1);const yr=md.getFullYear();const mo=md.getMonth();const dim=new Date(yr,mo+1,0).getDate();let t=0,d=0;for(let di=1;di<=dim;di++){const date=new Date(yr,mo,di);const k=dateKey(date);habits.filter(h=>isApplicable(h,date)).forEach(h=>{t++;if((state.habits[k]||{})[h.id])d++;});}labels.push(`${yr}年${mo+1}月`);data.push(t?Math.round(d/t*100):0);}}if(window._mainChart)window._mainChart.destroy();window._mainChart=new Chart(chartEl,{type:'bar',data:{labels,datasets:[{data,backgroundColor:'#7B72E9',borderRadius:6,borderSkipped:false}]},options:{scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%',color:'#8e8e93'},grid:{color:'rgba(255,255,255,0.06)'},border:{color:'rgba(255,255,255,0.1)'}},x:{ticks:{color:'#8e8e93'},grid:{display:false},border:{color:'rgba(255,255,255,0.1)'}}},plugins:{legend:{display:false}}}});}const barsEl=document.getElementById('habitBars');if(barsEl){const today2=new Date();const yr=today2.getFullYear();const mo=today2.getMonth();const getRows=apFn=>habits.map(h=>{const ap=apFn(h);const dn=ap.filter(k=>(state.habits[k]||{})[h.id]).length;const pct=ap.length?Math.round(dn/ap.length*100):0;return`<div class="bar-row"><div class="bar-label">${h.name}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${h.color}"></div></div><div class="bar-pct">${pct}%</div></div>`;}).join('');if(habitPeriod==='weekly'){const wS=new Date(today2);wS.setDate(today2.getDate()-today2.getDay());barsEl.innerHTML=getRows(h=>{const a=[];for(let di=0;di<7;di++){const d=new Date(wS);d.setDate(wS.getDate()+di);if(isApplicable(h,d))a.push(dateKey(d));}return a;});}else{const dim=new Date(yr,mo+1,0).getDate();barsEl.innerHTML=getRows(h=>{const a=[];for(let d=1;d<=dim;d++){const date=new Date(yr,mo,d);if(isApplicable(h,date))a.push(dateKey(date));}return a;});}}}
+
+function renderCalendar(){const year=calMonth.getFullYear(),month=calMonth.getMonth();const firstDay=new Date(year,month,1).getDay(),dim=new Date(year,month+1,0).getDate();const today=new Date();const dayLabels=['日','月','火','水','木','金','土'].map(d=>`<div class="cal-day-label">${d}</div>`).join('');let days='';for(let i=0;i<firstDay;i++)days+=`<div class="cal-day other-month"></div>`;for(let d=1;d<=dim;d++){const date=new Date(year,month,d);const k=dateKey(date);const comp=getDayCompletion(date);const isToday=dateKey(today)===k;const hasDiary=!!(state.diary[k]&&Object.values(state.diary[k]).some(v=>v&&v.trim()));let cls='cal-day';if(isToday)cls+=' today';else if(comp>=1)cls+=' full';else if(comp>0)cls+=' partial';else if(date<today)cls+=' empty';if(hasDiary)cls+=' has-diary';days+=`<div class="${cls}" onclick="selectCalDay('${k}')">${d}</div>`;}let diaryPopup='';if(calSelectedDate&&state.diary[calSelectedDate]){const entry=state.diary[calSelectedDate];const sections=[['hansei','反省','#ffd60a'],['yokatta1','良かったこと①','#30d158'],['yokatta2','良かったこと②','#30d158'],['yokatta3','良かったこと③','#30d158'],['kansha1','感謝①','#7B72E9'],['kansha2','感謝②','#7B72E9'],['kansha3','感謝③','#7B72E9'],['manabi','学び','#0a84ff'],['memo','メモ','#8e8e93']];const content=sections.filter(([id])=>entry[id]&&entry[id].trim()).map(([id,label,color])=>`<div style="margin-bottom:6px"><div style="font-size:10px;font-weight:700;color:${color};text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px">${label}</div><div style="font-size:13px;color:var(--text2)">${entry[id]}</div></div>`).join('');if(content)diaryPopup=`<div class="diary-popup"><div style="font-size:12px;font-weight:700;color:var(--text3);margin-bottom:8px">${calSelectedDate}</div>${content}</div>`;}return`<div class="cal-month-nav"><button class="cal-nav-btn" onclick="calMonth.setMonth(calMonth.getMonth()-1);renderContent()">&#8249;</button><div class="cal-month-title">${year}年${month+1}月</div><button class="cal-nav-btn" onclick="calMonth.setMonth(calMonth.getMonth()+1);renderContent()">&#8250;</button></div><div class="card" style="padding:12px"><div class="cal-grid">${dayLabels}${days}</div><div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--text3)"><span><span style="display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:50%;margin-right:4px"></span>全達成</span><span><span style="display:inline-block;width:8px;height:8px;background:var(--accent2);border-radius:50%;border:1px solid var(--accent);margin-right:4px"></span>一部達成</span><span><span style="display:inline-block;width:5px;height:5px;background:var(--amber);border-radius:50%;margin-right:4px"></span>日記あり</span></div>${diaryPopup}</div>`;}
+function selectCalDay(k){calSelectedDate=calSelectedDate===k?null:k;renderContent();}
+
+function renderDiary(){const today=todayKey();const entry=state.diary[today]||{};const diaryChecked=!!(state.habits[today]||{})['diary'];return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px"><div style="font-size:16px;font-weight:700">${today}</div><div style="font-size:12px;color:${diaryChecked?'var(--green)':'var(--text3)'}">${diaryChecked?'✓ 学び記入済み':'学びを記入すると日記習慣に✓'}</div></div><div class="card"><div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#ffd60a;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">反省</div><textarea id="diary-hansei" rows="2" placeholder="今日の反省...">${entry.hansei||''}</textarea></div><div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#30d158;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">良かったこと</div><textarea id="diary-yokatta1" rows="2" placeholder="良かったこと①" style="margin-bottom:6px">${entry.yokatta1||''}</textarea><textarea id="diary-yokatta2" rows="2" placeholder="良かったこと②" style="margin-bottom:6px">${entry.yokatta2||''}</textarea><textarea id="diary-yokatta3" rows="2" placeholder="良かったこと③">${entry.yokatta3||''}</textarea></div><div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#7B72E9;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">感謝</div><textarea id="diary-kansha1" rows="2" placeholder="感謝①" style="margin-bottom:6px">${entry.kansha1||''}</textarea><textarea id="diary-kansha2" rows="2" placeholder="感謝②" style="margin-bottom:6px">${entry.kansha2||''}</textarea><textarea id="diary-kansha3" rows="2" placeholder="感謝③">${entry.kansha3||''}</textarea></div><div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#0a84ff;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">学び <span style="font-size:9px;font-weight:400;color:var(--text3)">記入で日記習慣にチェック</span></div><textarea id="diary-manabi" rows="2" placeholder="今日の学び...">${entry.manabi||''}</textarea></div><div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#8e8e93;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">メモ</div><textarea id="diary-memo" rows="3" placeholder="その他メモ...">${entry.memo||''}</textarea></div><button class="save-btn" id="diaryBtn" onclick="saveDiary()">保存する</button></div>`;}
+
+function renderGoal(){const monthModal=editingMonthKey!==null?`<div class="modal-overlay" onclick="if(event.target===this)closeMonthEditor()"><div class="modal"><div class="modal-title">${editingMonthKey} のゴール</div><div id="monthGoalInputs">${(state.monthlyGoals[editingMonthKey]||[]).map(g=>`<div class="goal-bullet-edit"><input class="month-goal-input" type="text" value="${g}" placeholder="ゴール"><button onclick="this.closest('.goal-bullet-edit').remove()">×</button></div>`).join('')}</div><button class="btn-ghost" style="width:100%;margin-top:8px;padding:9px" onclick="addMonthGoalInput()">+ 追加</button><div class="modal-btns"><button style="background:var(--bg3);color:var(--text2);border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="closeMonthEditor()">キャンセル</button><button style="background:var(--accent);color:#fff;border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="saveMonthGoals()">保存する</button></div></div></div>`:'';if(editingGoal){return`${monthModal}<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 4px"><div style="font-size:16px;font-weight:700">目標を編集</div><div style="display:flex;gap:8px"><button class="btn-secondary" style="padding:7px 14px;font-size:13px" onclick="cancelGoalEdit()">キャンセル</button><button class="btn-primary" style="padding:7px 14px;font-size:13px" onclick="saveGoalConfig()">保存する</button></div></div><div class="goal-edit-section"><div class="goal-edit-label">Being</div><textarea id="edit-being" rows="2" placeholder="Beingを入力...">${goalConfig.being}</textarea></div><div class="goal-edit-section"><div class="goal-edit-label">Beingの根っこ（核心文）</div><textarea id="edit-beingRoot" rows="2" placeholder="根っこの文を入力...">${goalConfig.beingRoot}</textarea><div class="goal-edit-label" style="margin-top:10px">根っこの詳細</div><div id="bulletInputs">${goalConfig.beingBullets.map(b=>`<input class="edit-bullet goal-edit-input" type="text" value="${b}" placeholder="詳細">`).join('')}</div><button class="btn-ghost" style="width:100%;margin-top:4px;padding:8px" onclick="addBullet()">+ 追加</button></div><div class="goal-edit-section"><div class="goal-edit-label">最終ゴール</div><div id="finalGoalInputs">${goalConfig.finalGoals.map((g,i)=>`<div class="edit-final-goal" style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">${String(i+1).padStart(2,'0')}</div><input class="fg-title goal-edit-input" type="text" value="${g.title}" placeholder="タイトル"><input class="fg-desc goal-edit-input" type="text" value="${g.desc}" placeholder="説明" style="margin-top:4px"></div>`).join('')}</div><button class="btn-ghost" style="width:100%;padding:8px" onclick="addFinalGoal()">+ 追加</button></div><div class="goal-edit-section"><div class="goal-edit-label">1年後の通過点</div><div id="milestoneGoalInputs">${goalConfig.milestoneGoals.map((g,i)=>`<div class="edit-milestone-goal" style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;margin-bottom:8px;border:1px solid var(--border)"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">${String(i+1).padStart(2,'0')}</div><input class="mg-title goal-edit-input" type="text" value="${g.title}" placeholder="タイトル"><input class="mg-desc goal-edit-input" type="text" value="${g.desc}" placeholder="説明" style="margin-top:4px"></div>`).join('')}</div><button class="btn-ghost" style="width:100%;padding:8px" onclick="addMilestoneGoal()">+ 追加</button></div>`;}const usedKeys=Object.keys(state.monthlyGoals);const availableMonths=MONTH_OPTIONS.filter(o=>!usedKeys.includes(o.key));const monthGoalList=Object.entries(state.monthlyGoals).sort((a,b)=>a[0].localeCompare(b[0])).map(([mk,goals])=>{const[y,m]=mk.split('-');return`<div style="margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-size:13px;font-weight:700">${y}年${parseInt(m)}月</div><div style="display:flex;gap:6px"><button class="btn-ghost" style="padding:4px 10px;font-size:11px" onclick="openMonthEditor('${mk}')">編集</button><button class="btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteMonth('${mk}')">削除</button></div></div>${goals.map((g,i)=>`<div class="monthly-goal-row"><div class="monthly-check${(state.monthlyGoalsDone[mk]||{})[i]?' done':''}" onclick="toggleMonthlyGoal('${mk}',${i})">${(state.monthlyGoalsDone[mk]||{})[i]?`<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`:''}</div><div class="monthly-goal-text">${g}</div></div>`).join('')}</div>`;}).join('');return`${monthModal}<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding:0 4px"><div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.6px">目標</div><button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="startGoalEdit()">✏️ 編集</button></div><div style="background:var(--accent2);border-radius:var(--radius);padding:16px;margin-bottom:10px;border:1px solid rgba(123,114,233,0.3)"><div style="font-size:17px;font-weight:700;color:#b8b3f8;line-height:1.5">${goalConfig.being}</div></div><div class="card" style="margin-bottom:10px"><div style="font-size:13px;font-weight:500;margin-bottom:10px;color:var(--text2)">${goalConfig.beingRoot}</div>${goalConfig.beingBullets.map(b=>`<div style="display:flex;gap:8px;margin-bottom:8px"><div style="width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:9px;flex-shrink:0"></div><div style="font-size:13px;color:var(--text3)">${b}</div></div>`).join('')}</div><div class="having-card"><div class="having-header"><div class="having-header-text">最終ゴール</div></div>${goalConfig.finalGoals.map(g=>`<div class="having-item"><div class="having-num">${g.num}</div><div><div class="having-title">${g.title}</div><div class="having-desc">${g.desc}</div></div></div>`).join('')}</div><div class="having-card" style="margin-bottom:16px"><div class="having-header" style="background:var(--green2);border-bottom:1px solid rgba(48,209,88,0.2)"><div class="having-header-text" style="color:var(--green)">1年後の通過点（2027年4月）</div></div>${goalConfig.milestoneGoals.map(g=>`<div class="having-item"><div class="having-num" style="color:var(--green)">${g.num}</div><div><div class="having-title">${g.title}</div><div class="having-desc">${g.desc}</div></div></div>`).join('')}</div><div class="section-title">月次ゴール</div><div class="card">${monthGoalList||'<div style="color:var(--text3);text-align:center;padding:12px">まだ月次ゴールがありません</div>'}</div>${availableMonths.length>0?`<div class="card"><div style="font-size:13px;font-weight:600;margin-bottom:8px">月を追加</div><div style="display:flex;gap:8px"><select id="monthSelect" style="flex:1"><option value="">月を選択...</option>${availableMonths.map(o=>`<option value="${o.key}">${o.label}</option>`).join('')}</select><button class="btn-primary" onclick="addMonthGoal()">追加</button></div></div>`:''}`;}
+
+function renderHabits(){const editorModal=editingHabit?`<div class="modal-overlay" onclick="if(event.target===this)closeHabitEditor()"><div class="modal"><div class="modal-title">習慣を編集</div><div class="form-field"><label class="form-label">習慣名</label><input id="habitEditName" type="text" value="${editingHabit.name}" style="width:100%"></div><div class="form-field"><label class="form-label">頻度</label><div style="display:flex;gap:8px;margin-bottom:10px"><button class="${editingHabit.type==='daily'?'btn-primary':'btn-secondary'}" style="flex:1;padding:9px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none" onclick="editingHabit.type='daily';renderContent()">毎日</button><button class="${editingHabit.type!=='daily'?'btn-primary':'btn-secondary'}" style="flex:1;padding:9px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;border:none" onclick="editingHabit.type='custom';renderContent()">曜日指定</button></div>${editingHabit.type!=='daily'?`<div class="day-toggle">${[0,1,2,3,4,5,6].map(d=>`<button class="day-btn${editingHabit.days.includes(d)?' active':''}" onclick="toggleDay(${d})">${DAYS_JP[d]}</button>`).join('')}</div>`:''}</div><div class="modal-btns"><button style="background:var(--bg3);color:var(--text2);border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="closeHabitEditor()">キャンセル</button><button style="background:var(--accent);color:#fff;border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="saveHabit()">保存する</button></div></div></div>`:'';const habitList=habits.map((h,idx)=>`<div class="habit-edit-row"><div style="flex:1"><div style="font-size:14px;font-weight:600">${h.name}</div><div class="habit-edit-freq">${getFreqLabel(h)}</div></div><button class="habit-edit-btn" onclick="openHabitEditor(${idx})">編集</button><button class="btn-danger" onclick="deleteHabit(${idx})">削除</button></div>`).join('');return`${editorModal}<div class="section-title">習慣一覧</div><div class="card">${habitList}</div><div class="section-title">習慣を追加</div><div class="card"><div style="display:flex;gap:8px"><input id="newHabitName" type="text" placeholder="新しい習慣名" style="flex:1" onkeydown="if(event.key==='Enter')addHabit()"><button class="btn-primary" onclick="addHabit()">追加</button></div><div style="font-size:12px;color:var(--text3);margin-top:8px">追加後に編集から頻度・曜日を設定できます</div></div>`;}
+
+function renderLog(){const movieModal=modalData&&modalData.type==='movie';const bookModal=modalData&&modalData.type==='book';const genreOpts=t=>(t==='movie'?MOVIE_GENRES:BOOK_GENRES).map(g=>`<option>${g}</option>`).join('');const modal=(movieModal||bookModal)?`<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal"><div class="modal-title">${movieModal?'映画を記録':'本を記録'}</div><div class="form-field"><label class="form-label">日付</label><input id="log-date" type="date" value="${todayKey()}" style="width:100%"></div><div class="form-field"><label class="form-label">タイトル</label><input id="log-title" type="text" placeholder="タイトルを入力" style="width:100%"></div>${bookModal?`<div class="form-field"><label class="form-label">著者</label><input id="log-author" type="text" placeholder="著者名" style="width:100%"></div>`:'<input id="log-author" style="display:none">'}<div class="form-field"><label class="form-label">ジャンル</label><select id="log-genre" style="width:100%">${genreOpts(movieModal?'movie':'book')}</select></div><div class="form-field"><label class="form-label">評価</label><select id="log-rating" style="width:100%"><option>★★★★★</option><option>★★★★</option><option selected>★★★</option><option>★★</option><option>★</option></select></div><div class="form-field"><label class="form-label">感想</label><textarea id="log-review" rows="2" placeholder="感想を入力..."></textarea></div><div class="form-field"><label class="form-label">学び・気づき</label><textarea id="log-learning" rows="2" placeholder="学んだことを入力..."></textarea></div><div class="modal-btns"><button style="background:var(--bg3);color:var(--text2);border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="closeModal()">キャンセル</button><button style="background:var(--accent);color:#fff;border-radius:var(--radius-sm);padding:12px;font-size:15px;font-weight:700;cursor:pointer;border:none" onclick="saveLog()">保存する</button></div></div></div>`:'';const movieList=state.movies.map(m=>`<div class="log-item"><div class="log-icon">🎬</div><div class="log-info"><div class="log-title">${m.title}</div><div class="log-meta">${m.date} · ${m.genre}</div><div class="log-stars">${m.rating}</div>${m.learning?`<div style="font-size:12px;color:var(--text3);margin-top:4px">${m.learning}</div>`:''}</div></div>`).join('');const bookList=state.books.map(b=>`<div class="log-item"><div class="log-icon">📚</div><div class="log-info"><div class="log-title">${b.title}</div><div class="log-meta">${b.date}${b.author?' · '+b.author:''} · ${b.genre}</div><div class="log-stars">${b.rating}</div>${b.learning?`<div style="font-size:12px;color:var(--text3);margin-top:4px">${b.learning}</div>`:''}</div></div>`).join('');return`${modal}<div class="section-title">映画 (${state.movies.length}本)</div><button class="add-btn" onclick="openModal('movie')">+ 映画を追加</button><div class="card">${movieList||'<div style="color:var(--text3);text-align:center;padding:20px">まだ記録がありません</div>'}</div><div class="section-title">本 (${state.books.length}冊)</div><button class="add-btn" onclick="openModal('book')">+ 本を追加</button><div class="card">${bookList||'<div style="color:var(--text3);text-align:center;padding:20px">まだ記録がありません</div>'}</div>`;}
+
+function renderChat(){const msgs=state.chatHistory.map(m=>`<div class="msg ${m.role==='user'?'user':'ai'}">${m.content}</div>`).join('');return`<div style="font-size:13px;color:var(--text3);margin-bottom:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px">日記・映画・本のデータをもとに質問できます</div><div class="card"><div class="chat-messages" id="chatMessages">${msgs||'<div style="color:var(--text3);text-align:center;padding:24px">何でも聞いてください</div>'}</div><div class="chat-input-row"><input id="chatInput" placeholder="例：最近の学びは？" onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">送信</button></div></div><div style="margin-top:12px">${['最近の学びをまとめて','今月の振り返りを教えて','おすすめの本は？'].map(q=>`<button style="margin:4px;padding:7px 12px;border:1px solid var(--border2);border-radius:20px;background:var(--bg2);font-size:12px;color:var(--text2);cursor:pointer;font-weight:500" onclick="document.getElementById('chatInput').value='${q}';sendChat()">${q}</button>`).join('')}</div>`;}
+
+function exportForAI() {
+  const lines = [];
+  lines.push('=== Life Tracker 全データ エクスポート (' + todayKey() + ') ===\n');
+
+  // Being / Goals
+  lines.push('【Being】');
+  lines.push(goalConfig.being);
+  lines.push('');
+  lines.push('【Beingの根っこ】');
+  lines.push(goalConfig.beingRoot);
+  goalConfig.beingBullets.forEach(b => lines.push('・' + b));
+  lines.push('');
+
+  lines.push('【最終ゴール】');
+  goalConfig.finalGoals.forEach(g => lines.push(g.num + '. ' + g.title + '（' + g.desc + '）'));
+  lines.push('');
+
+  lines.push('【1年後の通過点】');
+  goalConfig.milestoneGoals.forEach(g => lines.push(g.num + '. ' + g.title + '（' + g.desc + '）'));
+  lines.push('');
+
+  // Monthly goals
+  lines.push('【月次ゴール】');
+  Object.entries(state.monthlyGoals).sort().forEach(([mk, goals]) => {
+    const [y,m] = mk.split('-');
+    goals.forEach((g, i) => {
+      const done = (state.monthlyGoalsDone[mk]||{})[i] ? '✓' : '□';
+      lines.push(done + ' ' + y + '年' + parseInt(m) + '月: ' + g);
+    });
+  });
+  lines.push('');
+
+  // Habits all time
+  lines.push('【習慣トラッカー（全データ）】');
+  const allDates = Object.keys(state.habits).sort();
+  allDates.forEach(date => {
+    const dayHabits = state.habits[date];
+    const done = habits.filter(h => dayHabits[h.id]).map(h => h.name);
+    const notDone = habits.filter(h => !dayHabits[h.id] && isApplicable(h, new Date(date))).map(h => h.name);
+    if (done.length || notDone.length) {
+      lines.push(date + ': ✓' + done.join('・') + (notDone.length ? ' ✗' + notDone.join('・') : ''));
+    }
+  });
+  lines.push('');
+
+  // Diary all
+  lines.push('【日記（全件）】');
+  Object.entries(state.diary).sort().forEach(([date, entry]) => {
+    lines.push('\n' + date);
+    if (entry.hansei) lines.push('  反省: ' + entry.hansei);
+    if (entry.yokatta1) lines.push('  良かったこと①: ' + entry.yokatta1);
+    if (entry.yokatta2) lines.push('  良かったこと②: ' + entry.yokatta2);
+    if (entry.yokatta3) lines.push('  良かったこと③: ' + entry.yokatta3);
+    if (entry.kansha1) lines.push('  感謝①: ' + entry.kansha1);
+    if (entry.kansha2) lines.push('  感謝②: ' + entry.kansha2);
+    if (entry.kansha3) lines.push('  感謝③: ' + entry.kansha3);
+    if (entry.manabi) lines.push('  学び: ' + entry.manabi);
+    if (entry.memo) lines.push('  メモ: ' + entry.memo);
+  });
+  lines.push('');
+
+  // Books all
+  lines.push('【本ログ（全件）】');
+  state.books.forEach(b => {
+    lines.push('・' + b.title + (b.author ? '／' + b.author : '') + '｜' + b.genre + '｜' + b.rating + (b.learning ? '\n  学び: ' + b.learning : ''));
+  });
+  lines.push('');
+
+  // Movies all
+  lines.push('【映画ログ（全件）】');
+  state.movies.forEach(m => {
+    lines.push('・' + m.title + '｜' + m.genre + '｜' + m.rating + (m.learning ? '\n  学び: ' + m.learning : ''));
+  });
+
+  const text = lines.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('[onclick="exportForAI()"]');
+    if (btn) { btn.textContent = '✓ コピーしました！'; setTimeout(() => { btn.textContent = '🤖 AI用テキストをコピー'; }, 2000); }
+  });
+}
+
+// Init handled by Firebase auth state change
+</script>
+</body>
+</html>
