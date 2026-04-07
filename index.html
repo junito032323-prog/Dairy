@@ -452,46 +452,47 @@ function checkAndInjectSchedule(){
 }
 
 function renderTomorrow(){
-  const key=tomorrowKey();
-  const sched=state.schedules[key]||[];
-  const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
-  const days=['日','月','火','水','木','金','土'];
-  const dateStr=(tomorrow.getMonth()+1)+'月'+tomorrow.getDate()+'日（'+days[tomorrow.getDay()]+'）';
+  var key=tomorrowKey();
+  var sched=state.schedules[key]||[];
+  var tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
+  var days=['日','月','火','水','木','金','土'];
+  var dateStr=(tomorrow.getMonth()+1)+'月'+tomorrow.getDate()+'日（'+days[tomorrow.getDay()]+'）';
 
-  const habitItems=habits.map(function(h){
-    const inSched=sched.some(function(s){return s.habitId===h.id;});
-    const btn=inSched
+  var habitItems=habits.map(function(h){
+    var inSched=sched.some(function(s){return s.habitId===h.id;});
+    var btn=inSched
       ? '<span style="font-size:11px;color:var(--accent);font-weight:600">追加済み ✓</span>'
-      : '<button onclick="addHabitToSchedule(''+h.id+'')" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>';
+      : '<button onclick="addHabitToSchedule(\'' + h.id + '\')" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="font-size:14px">'+h.name+' <span style="font-size:11px;color:var(--text3)">'+getFreqLabel(h)+'</span></div>'+btn+'</div>';
   }).join('');
 
-  const schedItems=sched.map(function(s,i){
-    const upDisabled=i===0?' disabled':'';
-    const downDisabled=i===sched.length-1?' disabled':'';
+  var schedItems=sched.map(function(s,i){
+    var upDis=i===0?' disabled':'';
+    var downDis=i===sched.length-1?' disabled':'';
+    var prefix=s.isHabit?'🔄 ':'';
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;flex-direction:column;gap:3px">'
-      +'<button onclick="moveScheduleItem('+i+',-1)"'+upDisabled+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▲</button>'
-      +'<button onclick="moveScheduleItem('+i+',1)"'+downDisabled+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▼</button>'
+      +'<button onclick="moveScheduleItem('+i+',-1)"'+upDis+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▲</button>'
+      +'<button onclick="moveScheduleItem('+i+',1)"'+downDis+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▼</button>'
       +'</div>'
       +'<div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg3)">'
       +'<span style="font-size:11px;color:var(--text3);font-weight:700">'+(i+1)+'</span></div>'
-      +'<div style="flex:1;font-size:14px">'+(s.isHabit?'🔄 ':'')+s.text+'</div>'
+      +'<div style="flex:1;font-size:14px">'+prefix+s.text+'</div>'
       +'<button onclick="removeScheduleItem('+i+')" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">×</button>'
       +'</div>';
   }).join('');
 
-  const empty='<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">まだ何も追加されていません</div>';
+  var empty='<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">まだ何も追加されていません</div>';
+  var schedInput='<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1" onkeydown="if(event.key===&apos;Enter&apos;){addScheduleItem(document.getElementById(&apos;schedInput&apos;).value.trim());document.getElementById(&apos;schedInput&apos;).value=&apos;&apos;}">'
+    +'<button class="btn-primary" onclick="addScheduleItem(document.getElementById(&apos;schedInput&apos;).value.trim());document.getElementById(&apos;schedInput&apos;).value=&apos;&apos;">追加</button>'
+    +'</div>';
 
   return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">'
     +'<div style="font-size:16px;font-weight:700">'+dateStr+'のスケジュール</div>'
     +'<div style="font-size:12px;color:var(--text3)">'+sched.length+'件</div></div>'
     +'<div class="section-title">スケジュール</div>'
-    +'<div class="card">'+(sched.length?schedItems:empty)
-    +'<div style="display:flex;gap:8px;margin-top:12px">'
-    +'<input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1" onkeydown="if(event.key==='Enter'){addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value=''}">'
-    +'<button class="btn-primary" onclick="addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value=''">追加</button>'
-    +'</div></div>'
+    +'<div class="card">'+(sched.length?schedItems:empty)+schedInput+'</div>'
     +'<div class="section-title">習慣から追加</div>'
     +'<div class="card">'+habitItems+'</div>'
     +'<div class="card" style="background:var(--accent2);border-color:rgba(16,185,129,0.3)">'
