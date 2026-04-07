@@ -326,7 +326,11 @@ function getSecondsLeft(t){if(!t.timerEnd)return null;return Math.floor((t.timer
 function formatTime(s){if(s<0)return'期限切れ';const h=Math.floor(s/3600);const m=Math.floor((s%3600)/60);const sec=s%60;if(h>0)return`${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;return`${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;}
 function timerClass(s){if(s===null)return'timer-normal';if(s<0)return'timer-expired';if(s<60)return'timer-urgent';if(s<300)return'timer-warning';return'timer-normal';}
 
-async function loadState(){try{const r=await window.storage.get('lifetracker-v8');if(r&&r.value){const data=JSON.parse(r.value);state=data.state||state;habits=data.habits||habits;if(data.goalConfig)goalConfig=data.goalConfig;}}catch(e){}}
+async function loadState(){try{const r=await window.storage.get('lifetracker-v8');if(r&&r.value){const data=JSON.parse(r.value);state=data.state||state;habits=data.habits||habits;if(data.goalConfig)goalConfig=data.goalConfig;}// Ensure new fields exist
+if(!state.schedules)state.schedules={};
+if(!state.monthlyGoalsDone)state.monthlyGoalsDone={};
+}catch(e){if(!state.schedules)state.schedules={};}}
+
 async function saveState(){try{await window.storage.set('lifetracker-v8',JSON.stringify({state,habits,goalConfig}));}catch(e){}}
 
 function startTimerTick(){if(timerInterval)clearInterval(timerInterval);timerInterval=setInterval(()=>{if(currentTab==='today'){const k=todayKey();const todos=state.todos[k]||[];if(todos.some(t=>t.timerEnd&&!t.done))renderContent();}},1000);}
