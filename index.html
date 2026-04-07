@@ -406,6 +406,7 @@ function addScheduleItem(text){
 }
 
 function addHabitToSchedule(habitId){
+  if(habitId&&habitId.dataset)habitId=habitId.dataset.id;
   const key=tomorrowKey();
   if(!state.schedules[key])state.schedules[key]=[];
   const h=habits.find(h=>h.id===habitId);if(!h)return;
@@ -462,14 +463,13 @@ function renderTomorrow(){
     var inSched=sched.some(function(s){return s.habitId===h.id;});
     var btn=inSched
       ? '<span style="font-size:11px;color:var(--accent);font-weight:600">追加済み ✓</span>'
-      : '<button onclick="addHabitToSchedule(\'' + h.id + '\')" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>';
+      : '<button onclick="addHabitToSchedule(this.dataset.id)" data-id="'+h.id+'" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="font-size:14px">'+h.name+' <span style="font-size:11px;color:var(--text3)">'+getFreqLabel(h)+'</span></div>'+btn+'</div>';
   }).join('');
 
   var schedItems=sched.map(function(s,i){
     var upDis=i===0?' disabled':'';
     var downDis=i===sched.length-1?' disabled':'';
-    var prefix=s.isHabit?'🔄 ':'';
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
       +'<div style="display:flex;flex-direction:column;gap:3px">'
       +'<button onclick="moveScheduleItem('+i+',-1)"'+upDis+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▲</button>'
@@ -477,28 +477,35 @@ function renderTomorrow(){
       +'</div>'
       +'<div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg3)">'
       +'<span style="font-size:11px;color:var(--text3);font-weight:700">'+(i+1)+'</span></div>'
-      +'<div style="flex:1;font-size:14px">'+prefix+s.text+'</div>'
+      +'<div style="flex:1;font-size:14px">'+(s.isHabit?'🔄 ':'')+s.text+'</div>'
       +'<button onclick="removeScheduleItem('+i+')" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">×</button>'
       +'</div>';
   }).join('');
 
   var empty='<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">まだ何も追加されていません</div>';
-  var schedInput='<div style="display:flex;gap:8px;margin-top:12px">'
-    +'<input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1" onkeydown="if(event.key===&apos;Enter&apos;){addScheduleItem(document.getElementById(&apos;schedInput&apos;).value.trim());document.getElementById(&apos;schedInput&apos;).value=&apos;&apos;}">'
-    +'<button class="btn-primary" onclick="addScheduleItem(document.getElementById(&apos;schedInput&apos;).value.trim());document.getElementById(&apos;schedInput&apos;).value=&apos;&apos;">追加</button>'
-    +'</div>';
 
   return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">'
     +'<div style="font-size:16px;font-weight:700">'+dateStr+'のスケジュール</div>'
     +'<div style="font-size:12px;color:var(--text3)">'+sched.length+'件</div></div>'
     +'<div class="section-title">スケジュール</div>'
-    +'<div class="card">'+(sched.length?schedItems:empty)+schedInput+'</div>'
+    +'<div class="card">'+(sched.length?schedItems:empty)
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1">'
+    +'<button class="btn-primary" onclick="submitScheduleInput()">追加</button>'
+    +'</div></div>'
     +'<div class="section-title">習慣から追加</div>'
     +'<div class="card">'+habitItems+'</div>'
     +'<div class="card" style="background:var(--accent2);border-color:rgba(16,185,129,0.3)">'
     +'<div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:4px">💡 明日になると...</div>'
     +'<div style="font-size:12px;color:var(--text3)">ここで作ったスケジュールが「今日」タブのTodoに自動追加されます</div>'
     +'</div>';
+}
+
+function submitScheduleInput(){
+  var el=document.getElementById('schedInput');
+  if(!el||!el.value.trim())return;
+  addScheduleItem(el.value.trim());
+  el.value='';
 }
 
 function exportForAI() {
