@@ -456,57 +456,49 @@ function renderTomorrow(){
   const sched=state.schedules[key]||[];
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const days=['日','月','火','水','木','金','土'];
-  const dateStr=`${tomorrow.getMonth()+1}月${tomorrow.getDate()}日（${days[tomorrow.getDay()]}）`;
+  const dateStr=(tomorrow.getMonth()+1)+'月'+tomorrow.getDate()+'日（'+days[tomorrow.getDay()]+'）';
 
-  // Habits not yet in schedule
-  const habitItems=habits.map((h,i)=>{
-    const inSched=sched.some(s=>s.habitId===h.id);
-    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:14px">${h.name} <span style="font-size:11px;color:var(--text3)">${getFreqLabel(h)}</span></div>
-      ${inSched
-        ?`<span style="font-size:11px;color:var(--accent);font-weight:600">追加済み ✓</span>`
-        :`<button onclick="addHabitToSchedule('${h.id}')" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>`
-      }
-    </div>`;
+  const habitItems=habits.map(function(h){
+    const inSched=sched.some(function(s){return s.habitId===h.id;});
+    const btn=inSched
+      ? '<span style="font-size:11px;color:var(--accent);font-weight:600">追加済み ✓</span>'
+      : '<button onclick="addHabitToSchedule(''+h.id+'')" style="padding:5px 12px;border-radius:var(--radius-sm);border:1px solid var(--accent);background:var(--accent2);color:var(--accent);font-size:12px;font-weight:600;cursor:pointer">+ 追加</button>';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="font-size:14px">'+h.name+' <span style="font-size:11px;color:var(--text3)">'+getFreqLabel(h)+'</span></div>'+btn+'</div>';
   }).join('');
 
-  const schedItems=sched.map((s,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;flex-direction:column;gap:3px">
-        <button onclick="moveScheduleItem(${i},-1)" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;line-height:1;padding:0" ${i===0?'disabled':''}>▲</button>
-        <button onclick="moveScheduleItem(${i},1)" style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;line-height:1;padding:0" ${i===sched.length-1?'disabled':''}>▼</button>
-      </div>
-      <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg3)">
-        <span style="font-size:11px;color:var(--text3);font-weight:700">${i+1}</span>
-      </div>
-      <div style="flex:1;font-size:14px">${s.isHabit?'🔄 ':''} ${s.text}</div>
-      <button onclick="removeScheduleItem(${i})" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">×</button>
-    </div>`).join('');
+  const schedItems=sched.map(function(s,i){
+    const upDisabled=i===0?' disabled':'';
+    const downDisabled=i===sched.length-1?' disabled':'';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="display:flex;flex-direction:column;gap:3px">'
+      +'<button onclick="moveScheduleItem('+i+',-1)"'+upDisabled+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▲</button>'
+      +'<button onclick="moveScheduleItem('+i+',1)"'+downDisabled+' style="background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:10px;padding:0">▼</button>'
+      +'</div>'
+      +'<div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--bg3)">'
+      +'<span style="font-size:11px;color:var(--text3);font-weight:700">'+(i+1)+'</span></div>'
+      +'<div style="flex:1;font-size:14px">'+(s.isHabit?'🔄 ':'')+s.text+'</div>'
+      +'<button onclick="removeScheduleItem('+i+')" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text3);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center">×</button>'
+      +'</div>';
+  }).join('');
 
-  return`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">
-      <div style="font-size:16px;font-weight:700">${dateStr}のスケジュール</div>
-      <div style="font-size:12px;color:var(--text3)">${sched.length}件</div>
-    </div>
+  const empty='<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">まだ何も追加されていません</div>';
 
-    <div class="section-title">スケジュール</div>
-    <div class="card">
-      ${sched.length?schedItems:`<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">まだ何も追加されていません</div>`}
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1" onkeydown="if(event.key==='Enter'){addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value='';}">
-        <button class="btn-primary" onclick="addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value=''">追加</button>
-      </div>
-    </div>
-
-    <div class="section-title">習慣から追加</div>
-    <div class="card">${habitItems}</div>
-
-    <div class="card" style="background:var(--accent2);border-color:rgba(16,185,129,0.3)">
-      <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:4px">💡 明日になると...</div>
-      <div style="font-size:12px;color:var(--text3)">ここで作ったスケジュールが「今日」タブのTodoに自動追加されます</div>
-    </div>`;
+  return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px">'
+    +'<div style="font-size:16px;font-weight:700">'+dateStr+'のスケジュール</div>'
+    +'<div style="font-size:12px;color:var(--text3)">'+sched.length+'件</div></div>'
+    +'<div class="section-title">スケジュール</div>'
+    +'<div class="card">'+(sched.length?schedItems:empty)
+    +'<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<input id="schedInput" type="text" placeholder="タスクを追加..." style="flex:1" onkeydown="if(event.key==='Enter'){addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value=''}">'
+    +'<button class="btn-primary" onclick="addScheduleItem(document.getElementById('schedInput').value.trim());document.getElementById('schedInput').value=''">追加</button>'
+    +'</div></div>'
+    +'<div class="section-title">習慣から追加</div>'
+    +'<div class="card">'+habitItems+'</div>'
+    +'<div class="card" style="background:var(--accent2);border-color:rgba(16,185,129,0.3)">'
+    +'<div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:4px">💡 明日になると...</div>'
+    +'<div style="font-size:12px;color:var(--text3)">ここで作ったスケジュールが「今日」タブのTodoに自動追加されます</div>'
+    +'</div>';
 }
-
 
 function exportForAI() {
   const lines = [];
