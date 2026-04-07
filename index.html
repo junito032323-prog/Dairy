@@ -204,15 +204,20 @@ window._auth = firebase.auth();
 window._firebaseReady = false;
 window._currentUser = null;
 
+var _appInitialized = false;
 window._auth.onAuthStateChanged(user => {
   if (user) {
     window._currentUser = user;
     window._firebaseReady = true;
     document.getElementById('authOverlay').style.display = 'none';
-    loadState().then(() => { checkAndInjectSchedule(); updateHeader(); renderContent(); startTimerTick(); });
+    if (!_appInitialized) {
+      _appInitialized = true;
+      loadState().then(() => { checkAndInjectSchedule(); updateHeader(); renderContent(); startTimerTick(); });
+    }
   } else {
     window._currentUser = null;
     window._firebaseReady = false;
+    _appInitialized = false;
     document.getElementById('authOverlay').style.display = 'flex';
   }
 });
