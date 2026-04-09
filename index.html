@@ -455,8 +455,10 @@ function checkAndInjectSchedule(){
   if(!sched.length)return;
   if(!state.todos[today])state.todos[today]=[];
   sched.forEach(s=>{
+    // 習慣から追加したものはTodoに入れない（習慣タブで管理）
+    if(s.isHabit)return;
     if(!state.todos[today].some(t=>t.text===s.text&&t.fromSchedule)){
-      state.todos[today].unshift({text:s.text,done:false,priority:'mid',timerEnd:null,fromSchedule:true,habitId:s.habitId||null});
+      state.todos[today].unshift({text:s.text,done:false,priority:'mid',timerEnd:null,fromSchedule:true});
     }
   });
 }
